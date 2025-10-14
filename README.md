@@ -1,0 +1,1 @@
+Tools to approximate IMDb's "Known For" equation (for use in my "Known 4" movie and tv trivia app (WIP)).
