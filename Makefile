@@ -14,10 +14,10 @@ PRINCIPALS_URL= $(IMDB_BASE)/title.principals.tsv.gz
 NAMES_URL = $(IMDB_BASE)/name.basics.tsv.gz
 
 
-.PHONY: all setup download-imdb build-labels build-dataset train clean
+.PHONY: all setup download-imdb build-modeling-base build-dataset train clean
 
 
-all: setup download-imdb build-labels build-dataset train
+all: setup download-imdb build-modeling-base build-dataset train
 
 
 setup:
@@ -33,21 +33,22 @@ download-imdb: setup
 
 
 # Build labels (nconst, tconst, rank_in_known_for) using DuckDB
-build-labels: $(SQL_DIR)/build_labels.sql
-	$(DUCKDB) -c \
-	"ATTACH ':memory:' AS db; \
-	\r $(SQL_DIR)/build_labels.sql;" \
+build-modeling-base: $(SQL_DIR)/build_modeling_base.sql
+	$(DUCKDB) < $(SQL_DIR)/build_modeling_base.sql \
 	> /dev/null
 
 
 # Build modeling table (actor–title pairs + features + label)
-build-dataset: src/build_dataset.py
-	$(PY) src/build_dataset.py --imdb_dir $(IMDB_DIR) --out $(PROC_DIR)/modeling_table.parquet
+# build-dataset: src/build_dataset.py
+# 	$(PY) src/build_dataset.py --imdb_dir $(IMDB_DIR) --out $(PROC_DIR)/modeling_table.parquet
+
+build-features:
+	$(PY) src/build_features.py $(PROC_DIR)/modeling_base.parquet $(PROC_DIR)/modeling_ml.parquet
 
 
 # Train a simple baseline (logistic regression) and write metrics
 train: src/train_baseline.py
-	$(PY) src/train_baseline.py --data $(PROC_DIR)/modeling_table.parquet --out $(PROC_DIR)/baseline_metrics.json
+	$(PY) src/train_baseline.py $(PROC_DIR)/modeling_table.parquet $(PROC_DIR)/baseline_metrics.json
 
 
 clean:
